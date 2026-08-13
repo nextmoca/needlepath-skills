@@ -1,0 +1,12 @@
+{
+  "name": "needlepath-integration",
+  "description": "Wire Needlepath into an application, agent, RAG pipeline or model gateway, with a pinned operating point, shadow-first rollout and exact fail-open behaviour.",
+  "version": "0.1.0",
+  "author": {
+    "name": "Next Moca",
+    "url": "https://nextmoca.com"
+  },
+  "homepage": "https://docs.nextmoca.com/integrations/agent-skills",
+  "license": "Apache-2.0",
+  "skills": "./skills"
+}

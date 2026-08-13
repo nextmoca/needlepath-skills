@@ -1,0 +1,18 @@
+{
+  "name": "needlepath",
+  "owner": {
+    "name": "Next Moca",
+    "url": "https://nextmoca.com"
+  },
+  "metadata": {
+    "description": "Integration skills for adding Needlepath context selection to an application."
+  },
+  "plugins": [
+    {
+      "name": "needlepath-integration",
+      "source": "./",
+      "description": "Wire Needlepath into an application, agent, RAG pipeline or model gateway, with a pinned operating point, shadow-first rollout and exact fail-open behaviour.",
+      "version": "0.1.0"
+    }
+  ]
+}

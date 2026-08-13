@@ -1,0 +1,65 @@
+name: Skill contract tests
+
+# NEXPE-503 AC7: CI validates the package and runs its contract tests before
+# publication. The seven tests assert the invariants that make this skill safe
+# to hand to a coding agent: the frontmatter name, a complete reference set, the
+# pinned operating point, `result.applied` gating in both SDK references, the
+# named framework adapters, and the HTTP fallback preserving exact original
+# context.
+#
+# A skill is prose, so nothing here proves an agent obeys it. What it proves is
+# that the prose still SAYS the binding things. That is a real check and a
+# narrower claim than "the integration is correct". Do not let it be read as the
+# larger one.
+#
+# Deliberately NOT added: a separate grep asserting one operating point label.
+# `test_all_guidance_uses_r3_and_never_r2_or_r4` already does it, and better,
+# because it scopes to the guidance and excludes the test file. The grep version
+# was written, run, and failed on its first execution against a correct package:
+# it counted the labels inside that very test, which names r2 and r4 in order to
+# forbid them. A redundant check that misreads the check it duplicates is worse
+# than no check.
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  contract:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 -m pip install --quiet pytest
+      - run: python3 -m pytest skills/needlepath-integration/tests -q
+
+  layout:
+    name: Package layout is installable
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Required files are present and manifests parse
+        run: |
+          set -euo pipefail
+          # `npx skills add` looks for skills/<name>/SKILL.md; Claude Code's
+          # marketplace looks for .claude-plugin/. Both must hold, since this one
+          # repo is the source for both install routes.
+          test -f skills/needlepath-integration/SKILL.md
+          test -f skills/needlepath-integration/agents/openai.yaml
+          test -f .claude-plugin/marketplace.json
+          test -f .claude-plugin/plugin.json
+          python3 -c "import json;json.load(open('.claude-plugin/marketplace.json'))"
+          python3 -c "import json;json.load(open('.claude-plugin/plugin.json'))"
+          # Nothing compiled or cached should ever reach a published package: a
+          # .pyc embeds the absolute path of the machine that built it.
+          if find . -name '*.pyc' -o -name '__pycache__' | grep -q .; then
+            echo "::error::compiled Python artifacts are present; they embed local paths"
+            exit 1
+          fi
+          echo "layout OK"

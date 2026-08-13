@@ -1,0 +1,4 @@
+interface:
+  display_name: "Integrate Needlepath"
+  short_description: "Add Needlepath safely to an AI application"
+  default_prompt: "Integrate Needlepath r3 into this application with shadow rollout, fail-open behavior, metrics, and tests."
