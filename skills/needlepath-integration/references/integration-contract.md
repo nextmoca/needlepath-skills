@@ -14,10 +14,10 @@ Do not put Needlepath in front of authentication, policy enforcement, user autho
 
 Use exactly one shape per call:
 
-- `text`: one document, transcript, or already-rendered context block. The service chunks it.
+- `text`: one document, transcript, or already-rendered context block, sent as one block.
 - `records`: state with identity or role, such as tool results, retrieved documents, artifacts, errors, or prior model messages.
 
-For records, use stable ids and truthful kinds: `user_input`, `llm_response`, `tool_call`, `tool_result`, `external_data`, `error`, `artifact`, or `tool_schema`. Preserve the application's original rendering separately for fail-open.
+For records, use stable ids and truthful kinds: `user_input`, `llm_response`, `tool_call`, `tool_result`, `external_data`, `error`, or `artifact`. Tool schemas are mandatory context, never candidates. Preserve the application's original rendering separately for fail-open.
 
 ## Mandatory Context
 
@@ -29,8 +29,6 @@ Keep these outside candidates and concatenate them around the applied or origina
 - current user request when it is itself mandatory model input
 - records the application cannot safely omit
 
-Do not rely on `required_record_ids` as a pin unless the served API contract explicitly documents it as active.
-
 ## Application Rule
 
 `result.applied` is the sole authority:
@@ -40,7 +38,7 @@ if applied:     use rendered selection
 if not applied: use exact original candidate context
 ```
 
-Never branch on `reason`, gate strings, scores, confidence, or a hard-coded outcome list. They are diagnostics and open enums. Never apply an empty result. Do not add an application-side fallback that drops or summarizes context.
+Never branch on `reason`, other diagnostic fields, or a hard-coded outcome list. They are open enums. Never apply an empty result. Do not add an application-side fallback that drops or summarizes context.
 
 ## Operating Point And Budget
 
@@ -81,4 +79,4 @@ Needlepath token counts are deterministic service measurements, not provider bil
 
 ## Verification Matrix
 
-Test applied, shadow, disabled, stood-down, empty, unsafe, timeout, transport error, 429/5xx, malformed contract, oversized request, and unknown future reason. Assert on the final model input, not merely the SDK result.
+Test applied, shadow, disabled, stood-down, empty, timeout, transport error, 429/5xx, malformed contract, oversized request, and unknown future reason. Assert on the final model input, not merely the SDK result.

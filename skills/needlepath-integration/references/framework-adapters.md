@@ -43,7 +43,7 @@ For an existing LangGraph `create_react_agent`, use `needlepath_pre_model_hook(o
 ## LiteLLM Proxy
 
 ```bash
-pip install needlepath-litellm
+pip install "needlepath-litellm>=0.2,<0.3"
 ```
 
 ```yaml
@@ -56,7 +56,6 @@ guardrails:
       operating_point: np-2026-08-r3
       shadow: true
       history_max_tokens: 8000
-      preserve_recent: 2
 ```
 
 This adapter mutates only OpenAI-format `/chat/completions` messages. Native Anthropic `/v1/messages`, OpenAI Responses API input, embeddings, images, audio, and pass-through routes stand down. If those are the application's primary routes, use a supported SDK seam instead of claiming proxy coverage.
@@ -80,7 +79,7 @@ query_engine = index.as_query_engine(
 )
 ```
 
-Preserve input node identity, provenance, and retriever scores. Measure value honestly: post-retrieval chunks may offer less headroom than tool outputs or long state.
+Pass input node identity, provenance, and retriever scores through unchanged so the application can round-trip them. Measure value honestly: post-retrieval chunks may offer less headroom than tool outputs or long state.
 
 ## Unsupported Or Ambiguous Seams
 

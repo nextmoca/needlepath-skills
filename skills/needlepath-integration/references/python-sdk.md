@@ -40,14 +40,14 @@ Keep `original_context` immutable until the model request has been constructed. 
 
 ## Typed Records
 
-Use records when identity or role affects selection:
+Use records when the application needs to round-trip identity or role:
 
 ```python
 from needlepath import ContextRecord, TaskSpec
 
 records = [
     ContextRecord(text=tool_output, kind="tool_result", id="tool-17"),
-    ContextRecord(text=policy_excerpt, kind="external_data", id="policy-4"),
+    ContextRecord(text=retrieved_doc, kind="external_data", id="doc-4"),
 ]
 result = client.select(
     records=records,

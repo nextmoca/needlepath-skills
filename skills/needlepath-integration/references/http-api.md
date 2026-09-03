@@ -35,12 +35,11 @@ Treat a response as applicable only when all structural checks succeed:
 
 - HTTP status is 2xx and the JSON contract is valid
 - response `request_id` matches the request
-- `fallback_used` is false and `selection_error` is empty
-- safety does not require fallback or mark selection unsafe
+- `fallback_used` is false, `selection_error` is empty, and the response does not require fallback
 - at least one record and non-empty `rendered_context` were returned
 - applying it produces a real reduction
 
-For every other condition, including timeout, non-2xx, malformed JSON, unknown future outcome, and client error, send the exact original context. Do not return an empty or partial block.
+For every other condition, including timeout, non-2xx, malformed JSON, unknown future outcome, and client error, send the exact original context. Do not return an empty or partial block. The SDKs implement exactly this rule as `result.applied`; prefer an SDK where one exists so raw-HTTP clients cannot drift from it.
 
 ## Transport
 

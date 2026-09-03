@@ -1,7 +1,7 @@
 name: Skill contract tests
 
-# NEXPE-503 AC7: CI validates the package and runs its contract tests before
-# publication. The seven tests assert the invariants that make this skill safe
+# CI validates the package and runs its contract tests before
+# publication. The contract tests assert the invariants that make this skill safe
 # to hand to a coding agent: the frontmatter name, a complete reference set, the
 # pinned operating point, `result.applied` gating in both SDK references, the
 # named framework adapters, and the HTTP fallback preserving exact original
