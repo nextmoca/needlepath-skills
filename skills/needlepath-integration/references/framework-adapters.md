@@ -28,7 +28,7 @@ agent = create_agent(
     tools,
     middleware=[
         NeedlepathMiddleware(
-            operating_point="np-2026-08-r3",
+            operating_point="np-2026-08-r4",
             shadow=True,
             select_history=False,
         )
@@ -38,7 +38,7 @@ agent = create_agent(
 
 Start with tool-result selection, where large structured outputs create the clearest value. Enable accumulated-history selection only after shadow evidence for that agentic workload. A ReAct loop can need records that are not predictable from the current step; do not assume retrieval benchmark behavior transfers to long-horizon agents.
 
-For an existing LangGraph `create_react_agent`, use `needlepath_pre_model_hook(operating_point="np-2026-08-r3", shadow=True)`. Do not remove messages from graph state; selection must be per model call and non-destructive.
+For an existing LangGraph `create_react_agent`, use `needlepath_pre_model_hook(operating_point="np-2026-08-r4", shadow=True)`. Do not remove messages from graph state; selection must be per model call and non-destructive.
 
 ## LiteLLM Proxy
 
@@ -53,7 +53,7 @@ guardrails:
       guardrail: needlepath_litellm.NeedlepathGuardrail
       mode: pre_call
       default_on: true
-      operating_point: np-2026-08-r3
+      operating_point: np-2026-08-r4
       shadow: true
       history_max_tokens: 8000
 ```
@@ -72,7 +72,7 @@ from llama_index.postprocessor.needlepath import NeedlepathPostprocessor
 query_engine = index.as_query_engine(
     node_postprocessors=[
         NeedlepathPostprocessor(
-            operating_point="np-2026-08-r3",
+            operating_point="np-2026-08-r4",
             shadow=True,
         )
     ]

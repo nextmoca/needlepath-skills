@@ -20,7 +20,7 @@ client = NeedlepathClient(
     api_key=os.environ.get("NEEDLEPATH_API_KEY"),
     base_url=os.environ.get("NEEDLEPATH_BASE_URL", "https://api.nextmoca.com"),
     operating_point=os.environ.get(
-        "NEEDLEPATH_OPERATING_POINT", "np-2026-08-r3"
+        "NEEDLEPATH_OPERATING_POINT", "np-2026-08-r4"
     ),
     shadow=True,
 )

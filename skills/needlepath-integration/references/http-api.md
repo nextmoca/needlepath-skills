@@ -20,7 +20,7 @@ For one raw context block:
   "task": {"prompt": "the current model task"},
   "budget": {
     "max_context_tokens": 8000,
-    "operating_point": "np-2026-08-r3"
+    "operating_point": "np-2026-08-r4"
   },
   "render": true,
   "return_per_record": false
