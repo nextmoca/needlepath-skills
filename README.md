@@ -24,8 +24,10 @@ npx skills add nextmoca/needlepath-skills
 ```
 
 Manual install: copy `skills/needlepath-integration/` into `.claude/skills/`
-for Claude Code, or `.agents/skills/` for Codex. Codex reads `.agents/skills`,
-**not** `.codex/skills`; a skill in the latter is silently never loaded.
+for Claude Code, or `.agents/skills/` for Codex, Gemini CLI, and Google
+Antigravity. Codex reads `.agents/skills`, **not** `.codex/skills`; a skill in
+the latter is silently never loaded. For Claude.ai, Claude Desktop, and Cowork,
+zip the `needlepath-integration/` folder and upload it under Customize > Skills.
 
 ## Then ask
 

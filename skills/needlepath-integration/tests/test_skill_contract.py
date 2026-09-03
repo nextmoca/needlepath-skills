@@ -74,6 +74,39 @@ class NeedlepathIntegrationSkillContractTest(unittest.TestCase):
         self.assertIn("np-2026-08-r3", reference)
         self.assertIn("exact original context", reference.lower())
 
+    def test_non_negotiables_are_stated_in_the_skill(self):
+        skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
+        contract = (ROOT / "references" / "integration-contract.md").read_text(encoding="utf-8")
+
+        # fail-open: every non-applied outcome sends the exact original context
+        self.assertIn("Apply a selection only when `result.applied` is true", skill)
+        self.assertIn("every non-applied outcome", skill)
+        # mandatory context stays outside selection
+        self.assertIn("Keep system prompts, governance policy, tool schemas, and other mandatory context outside selection", skill)
+        self.assertIn("Tool schemas are mandatory context, never candidates", contract)
+        # metadata only, never prompts or credentials
+        self.assertIn("Emit metadata only. Never log prompts, record content, excerpts, credentials", skill)
+        # production request paths never raise on a decline
+        self.assertIn("Never use `select_or_raise()` or `selectOrThrow()` in a production request path", skill)
+        # shadow first
+        self.assertIn("Start in client-side shadow mode", skill)
+
+    def test_public_text_carries_no_internal_identifiers_or_removed_options(self):
+        repo = ROOT.parents[1]
+        files = [
+            *repo.glob("*.md"),
+            *(repo / ".github").rglob("*.yml"),
+            ROOT / "SKILL.md",
+            *(ROOT / "references").glob("*.md"),
+            *(ROOT / "agents").glob("*.yaml"),
+        ]
+        combined = "\n".join(path.read_text(encoding="utf-8") for path in files)
+
+        self.assertNotIn("NEXPE-", combined)
+        self.assertNotIn("preserve_recent", combined)
+        self.assertNotIn("required_record_ids", combined)
+        self.assertNotIn("gate strings", combined)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -47,7 +47,7 @@ Make `shadow: true` configuration-driven. Edge runtimes may not expose `process`
 
 ## Typed Records
 
-Pass `records` instead of `text` when source identity and role matter. Use stable ids and honest kinds. Preserve the exact native message/context representation separately; that is the fail-open value. Never pass both shapes.
+Pass `records` instead of `text` when the application needs to round-trip source identity and role. Use stable ids and honest kinds. Preserve the exact native message/context representation separately; that is the fail-open value. Never pass both shapes.
 
 ## Cancellation And Streaming
 
