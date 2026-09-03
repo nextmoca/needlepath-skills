@@ -64,8 +64,7 @@ test("configuration is bounded and pins the production operating point", async (
     maxRequestBytes: 5_500_000,
   });
 
-  const manifest = await readJson(".claude-plugin/plugin.json");
-  assert.equal(manifest.metadata?.operatingPoint, config.operatingPoint);
+  assert.equal(Object.hasOwn(await readJson(".claude-plugin/plugin.json"), "metadata"), false);
 });
 
 test("direct auto configuration downgrades to shadow without a current doctor", async () => {

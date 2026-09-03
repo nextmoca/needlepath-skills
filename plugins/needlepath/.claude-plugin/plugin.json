@@ -20,10 +20,6 @@
     "needlepath"
   ],
   "defaultEnabled": true,
-  "metadata": {
-    "minimumClaudeCodeVersion": "2.1.207",
-    "operatingPoint": "np-2026-08-r4"
-  },
   "userConfig": {
     "needlepath_api_key": {
       "type": "string",
