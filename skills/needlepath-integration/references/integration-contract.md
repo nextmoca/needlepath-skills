@@ -45,7 +45,7 @@ Never branch on `reason`, other diagnostic fields, or a hard-coded outcome list.
 - Pin `np-2026-08-r4`; do not inherit `latest` or the server default.
 - Set the budget from the downstream model/input capacity available for selectable context, after mandatory context is reserved.
 - Do not confuse context budget with maximum output tokens.
-- Keep the operating point configurable for future migrations, but give it the explicit r3 default.
+- Keep the operating point configurable for future migrations, but give it the explicit `np-2026-08-r4` default.
 
 ## Rollout
 

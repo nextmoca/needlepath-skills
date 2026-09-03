@@ -40,7 +40,7 @@ Prove all of these at the application boundary:
 - an applied result sends selected context to the model
 - every non-applied outcome (shadow, stand-down, empty selection, timeout, HTTP failure, malformed response, unknown future reason) sends exact original context
 - mandatory context is never selectable
-- r3 is explicitly pinned and authentication stays out of logs
+- np-2026-08-r4 is explicitly pinned and authentication stays out of logs
 - metrics distinguish service token counts from provider-billed tokens
 - async and streaming behavior remains unchanged where applicable
 

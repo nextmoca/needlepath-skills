@@ -15,7 +15,7 @@ EXPECTED_REFERENCES = {
 
 
 class NeedlepathIntegrationSkillContractTest(unittest.TestCase):
-    def test_skill_is_an_integration_workflow_pinned_to_r3(self):
+    def test_skill_is_an_integration_workflow_pinned_to_r4(self):
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
 
         self.assertIn("name: needlepath-integration", skill)
@@ -28,13 +28,14 @@ class NeedlepathIntegrationSkillContractTest(unittest.TestCase):
         actual = {path.name for path in (ROOT / "references").glob("*.md")}
         self.assertEqual(actual, EXPECTED_REFERENCES)
 
-    def test_all_guidance_uses_r3_and_never_r2_or_r4(self):
+    def test_all_guidance_uses_r4_and_never_r2_or_r3(self):
         documents = [ROOT / "SKILL.md", *(ROOT / "references").glob("*.md")]
         combined = "\n".join(path.read_text(encoding="utf-8") for path in documents)
 
         self.assertIn("np-2026-08-r4", combined)
         self.assertNotIn("np-2026-07-r2", combined)
-        self.assertNotIn("np-2026-08-r4", combined)
+        self.assertNotIn("np-2026-08-r3", combined)
+        self.assertNotRegex(combined, r"\br3\b")
 
     def test_python_reference_applies_only_safe_results(self):
         reference = (ROOT / "references" / "python-sdk.md").read_text(encoding="utf-8")
