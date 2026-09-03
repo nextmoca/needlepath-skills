@@ -32,7 +32,7 @@ zip the `needlepath-integration/` folder and upload it under Customize > Skills.
 ## Then ask
 
 ```text
-Integrate Needlepath r3 into this application with shadow rollout,
+Integrate Needlepath r4 into this application with shadow rollout,
 fail-open behavior, metrics, and tests.
 ```
 
@@ -41,7 +41,7 @@ fail-open behavior, metrics, and tests.
 The skill treats these as non-negotiable, and the contract tests assert that it
 still says so:
 
-- pins `np-2026-08-r3` rather than inheriting the server default;
+- pins `np-2026-08-r4` rather than inheriting the server default;
 - starts in shadow mode, so nothing reaches your model differently until you
   turn selection on in configuration;
 - fails open exactly: your original context is preserved byte for byte on a
@@ -59,6 +59,11 @@ source into both `.claude/skills/` and `.agents/skills/`, and two copies would
 be two things to keep in sync.
 
 ## Versioning
+
+**1.0.0 (2026-09-03):** the pinned operating point moves from `np-2026-08-r3` to
+`np-2026-08-r4`, the label the published figures are measured on. Per the rule
+below this is a major version: nothing an existing install pinned changes until
+you update.
 
 A skill release names the SDK range it writes against and the operating point it
 pins. **A new operating point never arrives in an update.** Changing the pinned

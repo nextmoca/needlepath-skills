@@ -19,7 +19,7 @@ class NeedlepathIntegrationSkillContractTest(unittest.TestCase):
         skill = (ROOT / "SKILL.md").read_text(encoding="utf-8")
 
         self.assertIn("name: needlepath-integration", skill)
-        self.assertIn("np-2026-08-r3", skill)
+        self.assertIn("np-2026-08-r4", skill)
         self.assertIn("shadow", skill.lower())
         self.assertIn("fail open", skill.lower())
         self.assertIn("inspect", skill.lower())
@@ -32,7 +32,7 @@ class NeedlepathIntegrationSkillContractTest(unittest.TestCase):
         documents = [ROOT / "SKILL.md", *(ROOT / "references").glob("*.md")]
         combined = "\n".join(path.read_text(encoding="utf-8") for path in documents)
 
-        self.assertIn("np-2026-08-r3", combined)
+        self.assertIn("np-2026-08-r4", combined)
         self.assertNotIn("np-2026-07-r2", combined)
         self.assertNotIn("np-2026-08-r4", combined)
 
@@ -71,7 +71,7 @@ class NeedlepathIntegrationSkillContractTest(unittest.TestCase):
 
         self.assertIn("POST /v1/context/select", reference)
         self.assertIn("Authorization: Bearer", reference)
-        self.assertIn("np-2026-08-r3", reference)
+        self.assertIn("np-2026-08-r4", reference)
         self.assertIn("exact original context", reference.lower())
 
     def test_non_negotiables_are_stated_in_the_skill(self):

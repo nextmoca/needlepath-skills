@@ -5,7 +5,7 @@ description: Use when integrating Needlepath into an application, AI agent, work
 
 # Integrate Needlepath
 
-Implement Needlepath at the application's context assembly boundary. Prefer a supported framework adapter; otherwise use the Python or TypeScript SDK. Pin `np-2026-08-r3` unless the user explicitly requests another operating point.
+Implement Needlepath at the application's context assembly boundary. Prefer a supported framework adapter; otherwise use the Python or TypeScript SDK. Pin `np-2026-08-r4` unless the user explicitly requests another operating point.
 
 ## Non-Negotiable Contract
 
@@ -26,7 +26,7 @@ Implement Needlepath at the application's context assembly boundary. Prefer a su
 4. Otherwise read [python-sdk.md](references/python-sdk.md), [typescript-sdk.md](references/typescript-sdk.md), or [http-api.md](references/http-api.md) for another language.
 5. Read [integration-contract.md](references/integration-contract.md) before implementation.
 6. Add the SDK dependency using the repository's existing package manager and lockfile conventions.
-7. Configure `NEEDLEPATH_API_KEY`, optional `NEEDLEPATH_BASE_URL`, and an explicit `np-2026-08-r3` pin. Never commit a key.
+7. Configure `NEEDLEPATH_API_KEY`, optional `NEEDLEPATH_BASE_URL`, and an explicit `np-2026-08-r4` pin. Never commit a key.
 8. Separate mandatory context from selectable candidates. Choose `text` for one document/blob and typed records when the application needs to round-trip identity, provenance, or role.
 9. Wire one long-lived client into the existing dependency/lifecycle boundary. Preserve sync/async behavior.
 10. Ship shadow mode first: call Needlepath, retain full context, and record would-apply, reason, token counts, reduction, and latency.

@@ -20,7 +20,7 @@ const client = new NeedlepathClient({
   apiKey: process.env.NEEDLEPATH_API_KEY,
   baseUrl: process.env.NEEDLEPATH_BASE_URL ?? "https://api.nextmoca.com",
   operatingPoint:
-    process.env.NEEDLEPATH_OPERATING_POINT ?? "np-2026-08-r3",
+    process.env.NEEDLEPATH_OPERATING_POINT ?? "np-2026-08-r4",
   shadow: true,
 });
 
