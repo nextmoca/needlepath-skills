@@ -1,0 +1,13 @@
+{
+  "name": "@nextmoca/needlepath-claude-code",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Needlepath context selection for Claude Code",
+  "type": "module",
+  "engines": {
+    "node": ">=20.19"
+  },
+  "scripts": {
+    "test": "node --test --test-reporter=spec test/*.test.mjs"
+  }
+}

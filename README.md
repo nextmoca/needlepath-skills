@@ -12,6 +12,20 @@ skill.
 It is not an SDK, not an MCP server, and not a model proxy. See
 [the comparison table](https://docs.nextmoca.com/integrations/agent-skills).
 
+## The Claude Code plugin is the run-time counterpart
+
+`plugins/needlepath/` is a Claude Code plugin, not a skill. It sends large tool
+results through Needlepath and hands Claude excerpts of the original text, never
+a rewrite, and keeps the original output on any problem. It starts in shadow mode.
+
+```text
+/plugin marketplace add nextmoca/needlepath-skills
+/plugin install needlepath@needlepath
+```
+
+What it sends, what it never sends, configuration and uninstall are in
+[plugins/needlepath/README.md](plugins/needlepath/README.md).
+
 ## Install
 
 ```bash
@@ -36,7 +50,7 @@ Integrate Needlepath r4 into this application with shadow rollout,
 fail-open behavior, metrics, and tests.
 ```
 
-## What it guarantees
+## What it holds to
 
 The skill treats these as non-negotiable, and the contract tests assert that it
 still says so:
@@ -60,8 +74,8 @@ be two things to keep in sync.
 
 ## Versioning
 
-**1.0.0 (2026-09-03):** the pinned operating point moves from `np-2026-08-r3` to
-`np-2026-08-r4`, the label the published figures are measured on. Per the rule
+**1.0.0 (2026-09-03):** the pinned operating point is `np-2026-08-r4`, the label
+the published figures are measured on. Per the rule
 below this is a major version: nothing an existing install pinned changes until
 you update.
 

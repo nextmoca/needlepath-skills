@@ -1,0 +1,21 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Read|Grep|Search|Bash|PowerShell|WebFetch|WebSearch|mcp__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node",
+            "args": [
+              "${CLAUDE_PLUGIN_ROOT}/bin/needlepath-sidecar.mjs",
+              "hook",
+              "post-tool-use"
+            ],
+            "timeout": 12
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
+  "name": "needlepath",
+  "displayName": "Needlepath",
+  "version": "0.1.0",
+  "description": "Sends large tool results through Needlepath context selection so Claude reads excerpts of the original text instead of all of it, never a rewrite. Fails open: on any problem Claude keeps the original output.",
+  "author": {
+    "name": "Next Moca",
+    "email": "support@nextmoca.com",
+    "url": "https://nextmoca.com"
+  },
+  "homepage": "https://github.com/nextmoca/needlepath-skills/tree/main/plugins/needlepath",
+  "repository": "https://github.com/nextmoca/needlepath-skills",
+  "license": "Apache-2.0",
+  "keywords": [
+    "context",
+    "context-engineering",
+    "claude-code",
+    "token-optimization",
+    "needlepath"
+  ],
+  "defaultEnabled": true,
+  "metadata": {
+    "minimumClaudeCodeVersion": "2.1.207",
+    "operatingPoint": "np-2026-08-r4"
+  },
+  "userConfig": {
+    "needlepath_api_key": {
+      "type": "string",
+      "title": "Needlepath API key",
+      "description": "Don't have a key? Create an account at https://console.nextmoca.com, generate an API key, and enter it here.",
+      "sensitive": true,
+      "required": false
+    },
+    "needlepath_mode": {
+      "type": "string",
+      "title": "Selection mode",
+      "description": "Start in shadow, then use the Needlepath enable command after diagnostics pass.",
+      "default": "shadow"
+    },
+    "needlepath_base_url": {
+      "type": "string",
+      "title": "Needlepath API URL",
+      "description": "Hosted Needlepath API base URL.",
+      "default": "https://api.nextmoca.com"
+    },
+    "needlepath_min_tokens": {
+      "type": "number",
+      "title": "Minimum candidate tokens",
+      "description": "Do not call Needlepath for smaller tool results.",
+      "default": 4000,
+      "min": 256,
+      "max": 1000000
+    },
+    "needlepath_max_context_tokens": {
+      "type": "number",
+      "title": "Maximum selected tokens",
+      "description": "Maximum selectable context budget after mandatory output fields are reserved.",
+      "default": 8000,
+      "min": 256,
+      "max": 65536
+    },
+    "needlepath_timeout_ms": {
+      "type": "number",
+      "title": "Selection timeout",
+      "description": "Total sidecar and Needlepath deadline in milliseconds.",
+      "default": 3000,
+      "min": 250,
+      "max": 10000
+    },
+    "needlepath_telemetry": {
+      "type": "boolean",
+      "title": "Metadata telemetry",
+      "description": "Store and report selection metadata without prompts, tool content, or credentials.",
+      "default": true
+    }
+  }
+}

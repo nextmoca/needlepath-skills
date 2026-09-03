@@ -5,7 +5,7 @@
     "url": "https://nextmoca.com"
   },
   "metadata": {
-    "description": "Integration skills for adding Needlepath context selection to an application."
+    "description": "An integration skill for adding Needlepath to an application, and a Claude Code plugin that applies Needlepath to large tool results."
   },
   "plugins": [
     {
@@ -13,6 +13,18 @@
       "source": "./",
       "description": "Wire Needlepath into an application, agent, RAG pipeline or model gateway, with a pinned operating point, shadow-first rollout and exact fail-open behaviour.",
       "version": "1.0.0"
+    },
+    {
+      "name": "needlepath",
+      "source": "./plugins/needlepath",
+      "description": "Sends large tool results through Needlepath context selection so Claude reads excerpts of the original text instead of all of it, never a rewrite. Fails open: on any problem Claude keeps the original output.",
+      "version": "0.1.0",
+      "category": "developer-tools",
+      "tags": [
+        "context-engineering",
+        "needlepath",
+        "claude-code"
+      ]
     }
   ]
 }
