@@ -18,7 +18,7 @@
       "name": "needlepath",
       "source": "./plugins/needlepath",
       "description": "Sends large tool results through Needlepath context selection so Claude reads excerpts of the original text instead of all of it, never a rewrite. Fails open: on any problem Claude keeps the original output.",
-      "version": "0.1.0",
+      "version": "0.1.1",
       "category": "developer-tools",
       "tags": [
         "context-engineering",

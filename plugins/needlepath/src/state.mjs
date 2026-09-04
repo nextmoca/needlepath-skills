@@ -47,6 +47,7 @@ function sanitizeDoctor(value) {
     ok: value.ok === true,
     checkedAt: String(value.checkedAt || "").slice(0, 64),
     code: String(value.code || "unknown").slice(0, 128),
+    outcome: typeof value.outcome === "string" ? value.outcome.slice(0, 128) : null,
     sidecarVersion: String(value.sidecarVersion || "").slice(0, 64),
   };
 }

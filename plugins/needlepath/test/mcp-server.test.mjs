@@ -6,6 +6,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { createInterface } from "node:readline";
+import { createServer } from "node:http";
 import test from "node:test";
 
 const ROOT = new URL("../", import.meta.url);
@@ -104,6 +105,7 @@ test("status and doctor return metadata only and never expose the API key", asyn
   ], {
     env: environment(dataDir),
     dependencies: {
+      now: () => new Date("2026-09-04T00:00:00.000Z"),
       selectContext: async () => ({
         applied: true,
         reason: "ok",
@@ -126,8 +128,72 @@ test("status and doctor return metadata only and never expose the API key", asyn
   assert.deepEqual(JSON.parse(responses[1].result.content[0].text), {
     ok: true,
     code: "ok",
-    sidecarVersion: "0.1.0",
+    outcome: "ok",
+    checkedAt: "2026-09-04T00:00:00.000Z",
+    sidecarVersion: "0.1.1",
   });
+});
+
+test("doctor succeeds when the service answers but returns the probe unchanged", async () => {
+  const dataDir = await mkdtemp(join(tmpdir(), "needlepath-mcp-"));
+  const responses = await request([
+    { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "needlepath_doctor", arguments: {} } },
+    { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "needlepath_set_mode", arguments: { mode: "auto" } } },
+    { jsonrpc: "2.0", id: 3, method: "tools/call", params: { name: "needlepath_status", arguments: {} } },
+  ], {
+    env: environment(dataDir),
+    dependencies: {
+      now: () => new Date("2026-09-04T00:00:00.000Z"),
+      selectContext: async () => ({
+        applied: false,
+        reason: "engine_fallback",
+        selectedText: "",
+        metadata: { serviceOk: true, tokensBefore: 1792, tokensAfter: 1792, recordsSelected: 1 },
+      }),
+    },
+  });
+
+  assert.deepEqual(JSON.parse(responses[0].result.content[0].text), {
+    ok: true,
+    code: "ok",
+    outcome: "engine_fallback",
+    checkedAt: "2026-09-04T00:00:00.000Z",
+    sidecarVersion: "0.1.1",
+  });
+  assert.deepEqual(JSON.parse(responses[1].result.content[0].text), { changed: true, mode: "auto", code: "ok" });
+  const status = JSON.parse(responses[2].result.content[0].text);
+  assert.equal(status.mode, "auto");
+  assert.equal(status.doctor.ok, true);
+  assert.equal(status.doctor.outcome, "engine_fallback");
+});
+
+test("doctor fails when the service does not answer the plugin's request", async () => {
+  for (const reason of ["authentication_failed", "request_mismatch", "timeout", "malformed_response", "selection_error"]) {
+    const dataDir = await mkdtemp(join(tmpdir(), "needlepath-mcp-"));
+    const responses = await request([
+      { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "needlepath_doctor", arguments: {} } },
+      { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "needlepath_set_mode", arguments: { mode: "auto" } } },
+    ], {
+      env: environment(dataDir),
+      dependencies: {
+        now: () => new Date("2026-09-04T00:00:00.000Z"),
+        selectContext: async () => ({ applied: false, reason, selectedText: "", metadata: { serviceOk: false } }),
+      },
+    });
+
+    assert.deepEqual(JSON.parse(responses[0].result.content[0].text), {
+      ok: false,
+      code: reason,
+      outcome: reason,
+      checkedAt: "2026-09-04T00:00:00.000Z",
+      sidecarVersion: "0.1.1",
+    }, reason);
+    assert.deepEqual(JSON.parse(responses[1].result.content[0].text), {
+      changed: false,
+      mode: "shadow",
+      code: "doctor_required",
+    }, reason);
+  }
 });
 
 test("auto mode requires a current successful doctor while other modes update state", async () => {
@@ -205,6 +271,78 @@ test("a stale successful doctor cannot enable auto mode", async () => {
   });
 });
 
+async function withHttpServer(handler, run) {
+  const server = createServer(handler);
+  await new Promise((resolve) => server.listen(0, "127.0.0.1", resolve));
+  try {
+    return await run(`http://127.0.0.1:${server.address().port}`);
+  } finally {
+    await new Promise((resolve) => server.close(resolve));
+  }
+}
+
+async function readRequestJson(request) {
+  let body = "";
+  for await (const chunk of request) body += chunk;
+  return JSON.parse(body);
+}
+
+function fallbackAnswer(body) {
+  const text = body.records[0].text;
+  return {
+    request_id: body.request_id,
+    outcome: "engaged",
+    policy_version: "np-2026-08-r4",
+    fallback_used: true,
+    selected: [{ record_id: body.records[0].id, text, reason: "full context fallback" }],
+    rendered_context: text,
+    tokens_before: 1792,
+    tokens_after: 1792,
+    tokens_saved: 0,
+    reduction_ratio: 0,
+    records_available: 1,
+    records_selected: 1,
+    engine_latency_ms: 12.5,
+    selection_error: null,
+    safety: { selection_safe: false, fallback_required: true },
+  };
+}
+
+test("doctor judges real service answers through the client contract", async () => {
+  const { selectContext } = await import("../src/needlepath-client.mjs");
+  const cases = [
+    ["full fallback answer", 200, fallbackAnswer, { ok: true, code: "ok", outcome: "engine_fallback" }],
+    ["echo-only body", 200, (body) => ({ request_id: body.request_id }), { ok: false, code: "malformed_response", outcome: "malformed_response" }],
+    ["non-200 success status", 201, fallbackAnswer, { ok: false, code: "http_201", outcome: "http_201" }],
+    ["engine error", 200, (body) => ({ ...fallbackAnswer(body), selection_error: "engine unavailable" }), { ok: false, code: "selection_error", outcome: "selection_error" }],
+    ["rejected key", 403, () => ({ detail: "forbidden" }), { ok: false, code: "authentication_failed", outcome: "authentication_failed" }],
+  ];
+  for (const [label, status, answer, expected] of cases) {
+    await withHttpServer(async (incoming, response) => {
+      const body = await readRequestJson(incoming);
+      response.writeHead(status, { "content-type": "application/json" });
+      response.end(JSON.stringify(answer(body)));
+    }, async (baseUrl) => {
+      const dataDir = await mkdtemp(join(tmpdir(), "needlepath-mcp-"));
+      const responses = await request([
+        { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "needlepath_doctor", arguments: {} } },
+        { jsonrpc: "2.0", id: 2, method: "tools/call", params: { name: "needlepath_set_mode", arguments: { mode: "auto" } } },
+      ], {
+        env: environment(dataDir),
+        dependencies: {
+          now: () => new Date("2026-09-04T00:00:00.000Z"),
+          selectContext: (input, config) => selectContext(input, { ...config, baseUrl }),
+        },
+      });
+      const doctor = JSON.parse(responses[0].result.content[0].text);
+      assert.deepEqual(doctor, { ...expected, checkedAt: "2026-09-04T00:00:00.000Z", sidecarVersion: "0.1.1" }, label);
+      const mode = JSON.parse(responses[1].result.content[0].text);
+      assert.equal(mode.changed, expected.ok, label);
+      assert.equal(mode.mode, expected.ok ? "auto" : "shadow", label);
+    });
+  }
+});
+
 test("missing credentials fail doctor safely without attempting a diagnostic", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "needlepath-mcp-"));
   let calls = 0;
@@ -216,9 +354,13 @@ test("missing credentials fail doctor safely without attempting a diagnostic", a
   });
 
   assert.equal(calls, 0);
-  assert.deepEqual(JSON.parse(responses[0].result.content[0].text), {
+  const doctor = JSON.parse(responses[0].result.content[0].text);
+  assert.match(doctor.checkedAt, /^\d{4}-\d{2}-\d{2}T/);
+  delete doctor.checkedAt;
+  assert.deepEqual(doctor, {
     ok: false,
     code: "not_configured",
-    sidecarVersion: "0.1.0",
+    outcome: null,
+    sidecarVersion: "0.1.1",
   });
 });

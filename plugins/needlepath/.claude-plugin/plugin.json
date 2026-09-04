@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "needlepath",
   "displayName": "Needlepath",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Sends large tool results through Needlepath context selection so Claude reads excerpts of the original text instead of all of it, never a rewrite. Fails open: on any problem Claude keeps the original output.",
   "author": {
     "name": "Next Moca",

@@ -61,7 +61,7 @@ function applicable(body, overrides = {}) {
     request_id: body.request_id,
     rendered_context: "selected evidence",
     policy_version: "np-2026-08-r4",
-    selected: [{ record_id: recordId, excerpt: "selected evidence" }],
+    selected: [{ record_id: recordId, text: "selected evidence" }],
     tokens_before: 5000,
     tokens_after: 4,
     tokens_saved: 4996,
@@ -77,6 +77,8 @@ function applicable(body, overrides = {}) {
     safety: { selection_safe: true, fallback_required: false },
     gate: { reason: "future-open-enum" },
     format_metrics: {},
+    task_kind: "coding",
+    selection_trace: null,
     ...overrides,
   };
 }
@@ -126,7 +128,55 @@ test("selection sends a stable typed record with r4 adaptive auto budget and app
   });
 });
 
-test("API declines and unknown outcomes never apply selected output", async () => {
+test("envelope validation follows the published required fields", async () => {
+  const { selectContext } = await clientModule();
+  const required = [
+    "rendered_context",
+    "tokens_before",
+    "tokens_after",
+    "tokens_saved",
+    "records_available",
+    "records_selected",
+    "fallback_used",
+    "engine_latency_ms",
+  ];
+  const cases = [];
+  for (const field of required) {
+    cases.push([`missing ${field}`, (answer) => { delete answer[field]; }, "malformed_response", false]);
+  }
+  cases.push(["missing request_id", (answer) => { delete answer.request_id; }, "request_mismatch", false]);
+  cases.push(["required field of the wrong type", (answer) => { answer.tokens_before = "5000"; }, "malformed_response", false]);
+  cases.push(["optional outcome of the wrong type", (answer) => { answer.outcome = 5; }, "malformed_response", false]);
+  cases.push(["optional policy_version of the wrong type", (answer) => { answer.policy_version = 4; }, "malformed_response", false]);
+  cases.push(["optional selected of the wrong type", (answer) => { answer.selected = "record"; }, "malformed_response", false]);
+  cases.push(["non-string selection_error", (answer) => { answer.selection_error = { code: "engine" }; }, "selection_error", false]);
+  cases.push(["only the required fields", (answer) => {
+    for (const field of Object.keys(answer)) {
+      if (!required.includes(field) && field !== "request_id") delete answer[field];
+    }
+  }, "empty_selection", true]);
+  cases.push(["null optional fields", (answer) => { answer.outcome = null; answer.policy_version = null; answer.selected = null; }, "empty_selection", true]);
+  let index = 0;
+  await withServer(async (request, response) => {
+    const body = await readJson(request);
+    const answer = applicable(body);
+    cases[index++][1](answer);
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify(answer));
+  }, async (baseUrl) => {
+    for (const [label, , reason, serviceOk] of cases) {
+      const result = await selectContext?.(
+        { projection: projection(), task: "task", sessionId: "session" },
+        config(baseUrl),
+      );
+      assert.equal(result?.applied, false, label);
+      assert.equal(result?.reason, reason, label);
+      assert.equal(result?.metadata.serviceOk, serviceOk, label);
+    }
+  });
+});
+
+test("contract declines and unknown outcomes never apply selected output", async () => {
   const { selectContext } = await clientModule();
   const mutations = [
     ["engine_fallback", { fallback_used: true }],
@@ -135,7 +185,7 @@ test("API declines and unknown outcomes never apply selected output", async () =
     ["empty_selection", { records_selected: 0, selected: [], rendered_context: "" }],
     ["request_mismatch", { request_id: "someone-elses-request" }],
     ["unknown_outcome", { outcome: "future-maybe-applied" }],
-    ["unknown_selection", { selected: [{ record_id: "unknown", excerpt: "x" }] }],
+    ["unknown_selection", { selected: [{ record_id: "unknown", text: "x" }] }],
     ["no_reduction", { rendered_context: "A".repeat(20_000), tokens_after: 5000, tokens_saved: 0 }],
   ];
   let index = 0;
@@ -152,6 +202,8 @@ test("API declines and unknown outcomes never apply selected output", async () =
       assert.equal(result?.applied, false, reason);
       assert.equal(result?.reason, reason);
       assert.equal(result?.selectedText, "");
+      const envelopeInvalid = ["selection_error", "request_mismatch"].includes(reason);
+      assert.equal(result?.metadata.serviceOk, !envelopeInvalid, reason);
     }
   });
 });
@@ -174,6 +226,7 @@ test("transient failures retry once while deterministic 500 and authentication f
       config(baseUrl),
     );
     assert.equal(result?.applied, true);
+    assert.equal(result?.metadata.serviceOk, true);
     assert.equal(result?.metadata.attempts, 2);
     assert.equal(calls, 2);
   });
@@ -191,6 +244,7 @@ test("transient failures retry once while deterministic 500 and authentication f
       );
       assert.equal(result?.applied, false);
       assert.equal(result?.reason, reason);
+      assert.equal(result?.metadata.serviceOk, false);
       assert.equal(calls, 1);
       assert.equal(JSON.stringify(result).includes("np_test_secret"), false);
     });

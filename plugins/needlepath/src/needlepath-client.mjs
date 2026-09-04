@@ -16,6 +16,7 @@ function metadataFrom(payload, startedAt, attempts, requestBytes) {
   return {
     applied: false,
     reason: "unknown",
+    serviceOk: false,
     tokensBefore: Math.max(0, number(payload?.tokens_before)),
     tokensAfter: Math.max(0, number(payload?.tokens_after)),
     tokensSaved: Math.max(0, number(payload?.tokens_saved)),
@@ -84,14 +85,51 @@ function buildRequest(input, config) {
   };
 }
 
-function classify(payload, request, candidate) {
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+// Fields the published response contract requires, with their types. Everything else
+// is optional and is type-checked only when present.
+const REQUIRED_FIELDS = {
+  rendered_context: (value) => typeof value === "string",
+  tokens_before: isFiniteNumber,
+  tokens_after: isFiniteNumber,
+  tokens_saved: isFiniteNumber,
+  records_available: isFiniteNumber,
+  records_selected: isFiniteNumber,
+  fallback_used: (value) => typeof value === "boolean",
+  engine_latency_ms: isFiniteNumber,
+};
+const OPTIONAL_FIELDS = {
+  outcome: (value) => typeof value === "string",
+  policy_version: (value) => typeof value === "string",
+  selected: Array.isArray,
+};
+
+// The envelope is valid when the service answered this request with the configured key
+// and the documented response fields. Engine outcomes (fallback, escalation, no
+// reduction) are classified separately: they are valid answers that the hook must not apply.
+function envelopeReason(payload, request) {
   if (!payload || typeof payload !== "object" || Array.isArray(payload)) {
     return "malformed_response";
   }
   if (payload.request_id !== request.requestId) return "request_mismatch";
-  if (typeof payload.selection_error === "string" && payload.selection_error) {
+  if (payload.selection_error != null && payload.selection_error !== "") {
     return "selection_error";
   }
+  for (const [field, valid] of Object.entries(REQUIRED_FIELDS)) {
+    if (!valid(payload[field])) return "malformed_response";
+  }
+  for (const [field, valid] of Object.entries(OPTIONAL_FIELDS)) {
+    if (payload[field] != null && !valid(payload[field])) return "malformed_response";
+  }
+  return null;
+}
+
+function classify(payload, request, candidate) {
+  const envelope = envelopeReason(payload, request);
+  if (envelope) return envelope;
   if (payload.fallback_used === true) return "engine_fallback";
   if (payload.outcome != null && !APPLICABLE_OUTCOMES.has(String(payload.outcome))) {
     return payload.outcome === "escalated" ? "escalated" : "unknown_outcome";
@@ -165,7 +203,7 @@ export async function selectContext(input, config, dependencies = {}) {
           body: serialized,
           signal: controller.signal,
         });
-        if (!response.ok) {
+        if (response.status !== 200) {
           await cancelBody(response);
           if (TRANSIENT_STATUSES.has(response.status) && attempts < 2) continue;
           const reason = [401, 403].includes(response.status)
@@ -180,10 +218,15 @@ export async function selectContext(input, config, dependencies = {}) {
           return result("malformed_response", startedAt, attempts, requestBytes);
         }
         const reason = classify(payload, request, input.projection.candidate);
-        if (reason !== "ok") return result(reason, startedAt, attempts, requestBytes, payload);
+        if (reason !== "ok") {
+          const declined = result(reason, startedAt, attempts, requestBytes, payload);
+          declined.metadata.serviceOk = envelopeReason(payload, request) === null;
+          return declined;
+        }
         const metadata = metadataFrom(payload, startedAt, attempts, requestBytes);
         metadata.applied = true;
         metadata.reason = "ok";
+        metadata.serviceOk = true;
         return {
           applied: true,
           reason: "ok",

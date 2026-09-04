@@ -6,7 +6,7 @@ import { selectContext as defaultSelectContext } from "./needlepath-client.mjs";
 import { readState, updateState } from "./state.mjs";
 
 const MODES = ["off", "shadow", "auto", "emergency-pass-through"];
-const SIDECAR_VERSION = "0.1.0";
+const SIDECAR_VERSION = "0.1.1";
 
 const TOOLS = [
   {
@@ -71,6 +71,7 @@ async function runDoctor(env, dependencies) {
   const config = loadConfig(env, state);
   const now = dependencies.now?.() || new Date();
   let code = "not_configured";
+  let outcome = null;
   let ok = false;
 
   if (config.apiKey) {
@@ -80,16 +81,21 @@ async function runDoctor(env, dependencies) {
         { projection: diagnosticProjection(), task: "Needlepath connectivity diagnostic" },
         config,
       );
-      code = selection?.applied === true ? "ok" : String(selection?.reason || "diagnostic_failed").slice(0, 128);
-      ok = code === "ok";
+      // The diagnostic checks that the service answers this plugin's request with the
+      // configured key. What the engine decides about the probe (applied, returned
+      // unchanged, escalated) is reported as the outcome and does not fail the check.
+      outcome = String(selection?.reason || "diagnostic_failed").slice(0, 128);
+      ok = selection?.applied === true || selection?.metadata?.serviceOk === true;
+      code = ok ? "ok" : outcome;
     } catch {
       code = "diagnostic_failed";
+      outcome = code;
     }
   }
 
-  const doctor = { ok, checkedAt: now.toISOString(), code, sidecarVersion: SIDECAR_VERSION };
+  const doctor = { ok, checkedAt: now.toISOString(), code, outcome, sidecarVersion: SIDECAR_VERSION };
   await updateState(env.CLAUDE_PLUGIN_DATA, { doctor });
-  return { ok, code, sidecarVersion: SIDECAR_VERSION };
+  return { ok, code, outcome, checkedAt: doctor.checkedAt, sidecarVersion: SIDECAR_VERSION };
 }
 
 async function callTool(name, args, env, dependencies) {
