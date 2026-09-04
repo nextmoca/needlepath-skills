@@ -1,0 +1,34 @@
+name: Claude Code plugin tests
+
+# The plugin in plugins/needlepath is run-time code, so its gate is different
+# from the skill's: its own unit tests (Node's built-in runner, no dependencies)
+# plus strict manifest validation of both the marketplace and the plugin, the
+# same two commands a maintainer runs locally before opening a pull request.
+
+permissions:
+  contents: read
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  plugin:
+    name: Plugin tests and strict manifest validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: Unit tests
+        working-directory: plugins/needlepath
+        run: |
+          npm ci
+          npm test
+      - name: Manifests validate under --strict
+        run: |
+          npm install -g @anthropic-ai/claude-code
+          claude plugin validate . --strict
+          claude plugin validate plugins/needlepath --strict
