@@ -90,6 +90,21 @@ test("auto needs a successful doctor, which does not expire", async () => {
   }
 });
 
+test("off in the settings outranks whatever a skill last wrote to state", async () => {
+  const { loadConfig } = await importConfig();
+  const env = {
+    CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY: "np_test_secret",
+    CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE: "off",
+  };
+  const doctor = { ok: true, code: "ok", checkedAt: new Date().toISOString() };
+
+  for (const state of [{}, { mode: "shadow" }, { mode: "auto", doctor }]) {
+    assert.equal(loadConfig?.(env, state).mode, "off", JSON.stringify(state));
+  }
+  // Emergency pass-through still wins, because it is the remote stop control.
+  assert.equal(loadConfig?.(env, { emergencyPassThrough: true }).mode, "emergency-pass-through");
+});
+
 test("invalid modes and non-TLS remote endpoints fail closed to shadow defaults", async () => {
   const { loadConfig } = await importConfig();
   const config = loadConfig?.(

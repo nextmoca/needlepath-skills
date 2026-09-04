@@ -38,9 +38,13 @@ export function hasSuccessfulDoctor(doctor) {
 
 export function loadConfig(env = process.env, state = {}) {
   const configuredMode = env.CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE;
+  // `off` in the plugin's settings is a deliberate, durable instruction not to call
+  // Needlepath at all, so it outranks whatever a skill last wrote to local state.
   const requestedMode = state.emergencyPassThrough
     ? "emergency-pass-through"
-    : state.mode || configuredMode || "shadow";
+    : configuredMode === "off"
+      ? "off"
+      : state.mode || configuredMode || "shadow";
 
   const mode = MODES.has(requestedMode) ? requestedMode : "shadow";
   const downgraded = mode === "auto" && !hasSuccessfulDoctor(state.doctor);

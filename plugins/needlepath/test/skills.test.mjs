@@ -52,9 +52,10 @@ test("enable skill requires doctor before requesting auto mode", async () => {
   assert.match(enable, /do not paste (an )?API key into Claude/i);
 });
 
-test("disable skill uses the off mode control", async () => {
+test("disable skill returns to shadow and says how to stop calls entirely", async () => {
   const disable = await skill("disable");
   assertBaseShape("disable", disable);
   assert.match(disable, /needlepath_set_mode/);
-  assert.match(disable, /"off"/);
+  assert.match(disable, /"shadow"/);
+  assert.match(disable, /`off`/);
 });
