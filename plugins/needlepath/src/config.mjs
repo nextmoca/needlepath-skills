@@ -1,6 +1,5 @@
 const MODES = new Set(["off", "shadow", "auto", "emergency-pass-through"]);
 const DEFAULT_BASE_URL = "https://api.nextmoca.com";
-export const DOCTOR_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 
 function boundedNumber(value, fallback, min, max) {
   const parsed = Number(value);
@@ -29,10 +28,12 @@ function safeBaseUrl(value) {
   }
 }
 
-export function hasRecentSuccessfulDoctor(doctor, now = Date.now()) {
-  if (doctor?.ok !== true || doctor.code !== "ok") return false;
-  const checkedAt = Date.parse(doctor.checkedAt);
-  return Number.isFinite(checkedAt) && checkedAt <= now && now - checkedAt <= DOCTOR_MAX_AGE_MS;
+// A successful diagnostic is required before automatic selection, and it does not
+// expire. Each response is contract-validated on its own, and an unreachable service,
+// a rejected key, a timeout or an unusable response keeps the original tool result, so
+// re-checking the diagnostic on a clock would stop selection without adding a check.
+export function hasSuccessfulDoctor(doctor) {
+  return doctor?.ok === true && doctor.code === "ok";
 }
 
 export function loadConfig(env = process.env, state = {}) {
@@ -42,10 +43,12 @@ export function loadConfig(env = process.env, state = {}) {
     : state.mode || configuredMode || "shadow";
 
   const mode = MODES.has(requestedMode) ? requestedMode : "shadow";
+  const downgraded = mode === "auto" && !hasSuccessfulDoctor(state.doctor);
 
   return {
     apiKey: env.CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY || "",
-    mode: mode === "auto" && !hasRecentSuccessfulDoctor(state.doctor) ? "shadow" : mode,
+    mode: downgraded ? "shadow" : mode,
+    modeReason: downgraded ? "doctor_required" : null,
     baseUrl: safeBaseUrl(env.CLAUDE_PLUGIN_OPTION_NEEDLEPATH_BASE_URL),
     minTokens: boundedNumber(
       env.CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MIN_TOKENS,

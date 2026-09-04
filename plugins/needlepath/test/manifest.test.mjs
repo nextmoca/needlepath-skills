@@ -55,6 +55,7 @@ test("configuration is bounded and pins the production operating point", async (
   assert.deepEqual(config, {
     apiKey: "np_test_secret",
     mode: "shadow",
+    modeReason: "doctor_required",
     baseUrl: "https://selector.example/base",
     minTokens: 256,
     maxContextTokens: 65536,
@@ -67,20 +68,26 @@ test("configuration is bounded and pins the production operating point", async (
   assert.equal(Object.hasOwn(await readJson(".claude-plugin/plugin.json"), "metadata"), false);
 });
 
-test("direct auto configuration downgrades to shadow without a current doctor", async () => {
+test("auto needs a successful doctor, which does not expire", async () => {
   const { loadConfig } = await importConfig();
   const env = {
     CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY: "np_test_secret",
     CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE: "auto",
   };
 
-  assert.equal(loadConfig?.(env, {}).mode, "shadow");
-  assert.equal(loadConfig?.(env, {
-    doctor: { ok: true, code: "ok", checkedAt: "2020-01-01T00:00:00.000Z" },
-  }).mode, "shadow");
-  assert.equal(loadConfig?.(env, {
-    doctor: { ok: true, code: "ok", checkedAt: new Date().toISOString() },
-  }).mode, "auto");
+  const never = loadConfig?.(env, {});
+  assert.equal(never.mode, "shadow");
+  assert.equal(never.modeReason, "doctor_required");
+
+  const failed = loadConfig?.(env, { doctor: { ok: false, code: "authentication_failed", checkedAt: new Date().toISOString() } });
+  assert.equal(failed.mode, "shadow");
+  assert.equal(failed.modeReason, "doctor_required");
+
+  for (const checkedAt of ["2020-01-01T00:00:00.000Z", new Date().toISOString()]) {
+    const config = loadConfig?.(env, { doctor: { ok: true, code: "ok", checkedAt } });
+    assert.equal(config.mode, "auto", checkedAt);
+    assert.equal(config.modeReason, null, checkedAt);
+  }
 });
 
 test("invalid modes and non-TLS remote endpoints fail closed to shadow defaults", async () => {

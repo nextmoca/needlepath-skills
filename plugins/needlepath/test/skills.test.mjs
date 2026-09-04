@@ -47,7 +47,7 @@ test("enable skill requires doctor before requesting auto mode", async () => {
   assert.match(enable, /needlepath_doctor/);
   assert.match(enable, /needlepath_set_mode/);
   assert.match(enable, /"auto"/);
-  assert.match(enable, /recent successful doctor/i);
+  assert.match(enable, /successful doctor/i);
   assert.match(enable, /https:\/\/console\.nextmoca\.com/);
   assert.match(enable, /do not paste (an )?API key into Claude/i);
 });
