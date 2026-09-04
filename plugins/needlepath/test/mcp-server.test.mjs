@@ -120,6 +120,7 @@ test("status and doctor return metadata only and never expose the API key", asyn
   assert.equal(serialized.includes("private selected context"), false);
   assert.deepEqual(JSON.parse(responses[0].result.content[0].text), {
     mode: "shadow",
+    modeReason: null,
     configured: true,
     emergencyPassThrough: false,
     lastOutcome: null,
@@ -130,7 +131,7 @@ test("status and doctor return metadata only and never expose the API key", asyn
     code: "ok",
     outcome: "ok",
     checkedAt: "2026-09-04T00:00:00.000Z",
-    sidecarVersion: "0.1.2",
+    sidecarVersion: "0.1.3",
   });
 });
 
@@ -158,7 +159,7 @@ test("doctor succeeds when the service answers but returns the probe unchanged",
     code: "ok",
     outcome: "engine_fallback",
     checkedAt: "2026-09-04T00:00:00.000Z",
-    sidecarVersion: "0.1.2",
+    sidecarVersion: "0.1.3",
   });
   assert.deepEqual(JSON.parse(responses[1].result.content[0].text), { changed: true, mode: "auto", code: "ok" });
   const status = JSON.parse(responses[2].result.content[0].text);
@@ -186,7 +187,7 @@ test("doctor fails when the service does not answer the plugin's request", async
       code: reason,
       outcome: reason,
       checkedAt: "2026-09-04T00:00:00.000Z",
-      sidecarVersion: "0.1.2",
+      sidecarVersion: "0.1.3",
     }, reason);
     assert.deepEqual(JSON.parse(responses[1].result.content[0].text), {
       changed: false,
@@ -244,7 +245,7 @@ test("auto mode requires a current successful doctor while other modes update st
   });
 });
 
-test("a stale successful doctor cannot enable auto mode", async () => {
+test("a successful doctor keeps enabling auto mode however old it is", async () => {
   const dataDir = await mkdtemp(join(tmpdir(), "needlepath-mcp-"));
   let clockCalls = 0;
   const responses = await request([
@@ -263,11 +264,11 @@ test("a stale successful doctor cannot enable auto mode", async () => {
     },
   });
 
-  assert.equal(responses[1].result.isError, true);
+  assert.equal(responses[1].result.isError, undefined);
   assert.deepEqual(JSON.parse(responses[1].result.content[0].text), {
-    changed: false,
-    mode: "shadow",
-    code: "doctor_required",
+    changed: true,
+    mode: "auto",
+    code: "ok",
   });
 });
 
@@ -335,12 +336,30 @@ test("doctor judges real service answers through the client contract", async () 
         },
       });
       const doctor = JSON.parse(responses[0].result.content[0].text);
-      assert.deepEqual(doctor, { ...expected, checkedAt: "2026-09-04T00:00:00.000Z", sidecarVersion: "0.1.2" }, label);
+      assert.deepEqual(doctor, { ...expected, checkedAt: "2026-09-04T00:00:00.000Z", sidecarVersion: "0.1.3" }, label);
       const mode = JSON.parse(responses[1].result.content[0].text);
       assert.equal(mode.changed, expected.ok, label);
       assert.equal(mode.mode, expected.ok ? "auto" : "shadow", label);
     });
   }
+});
+
+test("status says why it downgraded a configured auto mode", async () => {
+  const dataDir = await mkdtemp(join(tmpdir(), "needlepath-mcp-"));
+  const responses = await request([
+    { jsonrpc: "2.0", id: 1, method: "tools/call", params: { name: "needlepath_status", arguments: {} } },
+  ], {
+    env: environment(dataDir, { CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE: "auto" }),
+  });
+
+  assert.deepEqual(JSON.parse(responses[0].result.content[0].text), {
+    mode: "shadow",
+    modeReason: "doctor_required",
+    configured: true,
+    emergencyPassThrough: false,
+    lastOutcome: null,
+    doctor: null,
+  });
 });
 
 test("missing credentials fail doctor safely without attempting a diagnostic", async () => {
@@ -361,6 +380,6 @@ test("missing credentials fail doctor safely without attempting a diagnostic", a
     ok: false,
     code: "not_configured",
     outcome: null,
-    sidecarVersion: "0.1.2",
+    sidecarVersion: "0.1.3",
   });
 });

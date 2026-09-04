@@ -48,6 +48,7 @@ test("configuration is bounded and pins the production operating point", async (
       CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MAX_CONTEXT_TOKENS: "999999",
       CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TIMEOUT_MS: "999999",
       CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TELEMETRY: "false",
+      CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "false",
     },
     {},
   );
@@ -55,11 +56,13 @@ test("configuration is bounded and pins the production operating point", async (
   assert.deepEqual(config, {
     apiKey: "np_test_secret",
     mode: "shadow",
+    modeReason: "doctor_required",
     baseUrl: "https://selector.example/base",
     minTokens: 256,
     maxContextTokens: 65536,
     timeoutMs: 10000,
     telemetry: false,
+    autochunk: false,
     operatingPoint: "np-2026-08-r4",
     maxRequestBytes: 5_500_000,
   });
@@ -67,20 +70,50 @@ test("configuration is bounded and pins the production operating point", async (
   assert.equal(Object.hasOwn(await readJson(".claude-plugin/plugin.json"), "metadata"), false);
 });
 
-test("direct auto configuration downgrades to shadow without a current doctor", async () => {
+test("splitting is on unless the option says otherwise", async () => {
+  const { loadConfig } = await importConfig();
+  const key = { CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY: "np_test_secret" };
+  assert.equal(loadConfig?.(key, {}).autochunk, true);
+  assert.equal(loadConfig?.({ ...key, CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "maybe" }, {}).autochunk, true);
+  assert.equal(loadConfig?.({ ...key, CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "false" }, {}).autochunk, false);
+  assert.equal(loadConfig?.({ ...key, CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "0" }, {}).autochunk, false);
+});
+
+test("auto needs a successful doctor, which does not expire", async () => {
   const { loadConfig } = await importConfig();
   const env = {
     CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY: "np_test_secret",
     CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE: "auto",
   };
 
-  assert.equal(loadConfig?.(env, {}).mode, "shadow");
-  assert.equal(loadConfig?.(env, {
-    doctor: { ok: true, code: "ok", checkedAt: "2020-01-01T00:00:00.000Z" },
-  }).mode, "shadow");
-  assert.equal(loadConfig?.(env, {
-    doctor: { ok: true, code: "ok", checkedAt: new Date().toISOString() },
-  }).mode, "auto");
+  const never = loadConfig?.(env, {});
+  assert.equal(never.mode, "shadow");
+  assert.equal(never.modeReason, "doctor_required");
+
+  const failed = loadConfig?.(env, { doctor: { ok: false, code: "authentication_failed", checkedAt: new Date().toISOString() } });
+  assert.equal(failed.mode, "shadow");
+  assert.equal(failed.modeReason, "doctor_required");
+
+  for (const checkedAt of ["2020-01-01T00:00:00.000Z", new Date().toISOString()]) {
+    const config = loadConfig?.(env, { doctor: { ok: true, code: "ok", checkedAt } });
+    assert.equal(config.mode, "auto", checkedAt);
+    assert.equal(config.modeReason, null, checkedAt);
+  }
+});
+
+test("off in the settings outranks whatever a skill last wrote to state", async () => {
+  const { loadConfig } = await importConfig();
+  const env = {
+    CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY: "np_test_secret",
+    CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE: "off",
+  };
+  const doctor = { ok: true, code: "ok", checkedAt: new Date().toISOString() };
+
+  for (const state of [{}, { mode: "shadow" }, { mode: "auto", doctor }]) {
+    assert.equal(loadConfig?.(env, state).mode, "off", JSON.stringify(state));
+  }
+  // Emergency pass-through still wins, because it is the remote stop control.
+  assert.equal(loadConfig?.(env, { emergencyPassThrough: true }).mode, "emergency-pass-through");
 });
 
 test("invalid modes and non-TLS remote endpoints fail closed to shadow defaults", async () => {

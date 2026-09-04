@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 
 import { createInterface } from "node:readline";
-import { hasRecentSuccessfulDoctor, loadConfig } from "./config.mjs";
+import { hasSuccessfulDoctor, loadConfig } from "./config.mjs";
 import { selectContext as defaultSelectContext } from "./needlepath-client.mjs";
 import { readState, updateState } from "./state.mjs";
 
 const MODES = ["off", "shadow", "auto", "emergency-pass-through"];
-const SIDECAR_VERSION = "0.1.2";
+const SIDECAR_VERSION = "0.1.3";
 
 const TOOLS = [
   {
@@ -46,6 +46,7 @@ function result(id, value) {
 function status(config, state) {
   return {
     mode: config.mode,
+    modeReason: config.modeReason || null,
     configured: Boolean(config.apiKey),
     emergencyPassThrough: state.emergencyPassThrough === true,
     lastOutcome: state.lastOutcome || null,
@@ -110,8 +111,7 @@ async function callTool(name, args, env, dependencies) {
   if (!MODES.includes(mode)) return content({ changed: false, mode: "shadow", code: "invalid_mode" }, true);
   const state = await readState(env.CLAUDE_PLUGIN_DATA);
   const config = loadConfig(env, state);
-  const now = (dependencies.now?.() || new Date()).getTime();
-  if (mode === "auto" && !hasRecentSuccessfulDoctor(state.doctor, now)) {
+  if (mode === "auto" && !hasSuccessfulDoctor(state.doctor)) {
     return content({ changed: false, mode: config.mode, code: "doctor_required" }, true);
   }
   await updateState(env.CLAUDE_PLUGIN_DATA, {

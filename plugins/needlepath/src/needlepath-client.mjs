@@ -72,6 +72,10 @@ function buildRequest(input, config) {
         max_context_tokens: maxContextTokens,
         operating_point: config.operatingPoint,
         mode: "adaptive",
+        // A tool result arrives as one record. Without this the service can only keep
+        // it whole or drop it, so it keeps it whole; with it the service splits the
+        // record into parts and selects among them.
+        ...(config.autochunk ? { autochunk: true } : {}),
         adaptive: {
           initial_tokens: initialTokens,
           escalation_tokens: initialTokens < maxContextTokens ? [maxContextTokens] : [],
