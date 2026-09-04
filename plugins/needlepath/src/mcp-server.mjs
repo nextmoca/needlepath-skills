@@ -6,7 +6,7 @@ import { selectContext as defaultSelectContext } from "./needlepath-client.mjs";
 import { readState, updateState } from "./state.mjs";
 
 const MODES = ["off", "shadow", "auto", "emergency-pass-through"];
-const SIDECAR_VERSION = "0.1.1";
+const SIDECAR_VERSION = "0.1.2";
 
 const TOOLS = [
   {

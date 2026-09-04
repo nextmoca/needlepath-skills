@@ -104,3 +104,25 @@ test("invalid modes and non-TLS remote endpoints fail closed to shadow defaults"
   }, {});
   assert.equal(credentialUrl?.baseUrl, "https://api.nextmoca.com");
 });
+
+test("the MCP server declares every option it reads", async () => {
+  const [mcp, manifest] = await Promise.all([
+    readFile(new URL(".mcp.json", ROOT), "utf8").then(JSON.parse),
+    readFile(new URL(".claude-plugin/plugin.json", ROOT), "utf8").then(JSON.parse),
+  ]);
+  const source = await readFile(new URL("src/config.mjs", ROOT), "utf8");
+  // Claude Code passes an MCP server only the environment its .mcp.json declares,
+  // so every option the server reads has to be mapped here or it is never configured.
+  const read = [...new Set(source.match(/CLAUDE_PLUGIN_OPTION_[A-Z_]+/g) || [])].sort();
+  const declared = mcp.mcpServers?.needlepath?.env || {};
+  assert.ok(read.length > 0);
+  for (const name of read) {
+    const key = name.replace("CLAUDE_PLUGIN_OPTION_", "").toLowerCase();
+    assert.equal(declared[name], `\${user_config.${key}}`, name);
+    assert.ok(manifest.userConfig?.[key], `${key} must be a declared option`);
+  }
+  for (const [name, value] of Object.entries(declared)) {
+    assert.ok(read.includes(name), `${name} is passed but never read`);
+    assert.match(value, /^\$\{user_config\.[a-z_]+\}$/, name);
+  }
+});

@@ -130,7 +130,7 @@ test("status and doctor return metadata only and never expose the API key", asyn
     code: "ok",
     outcome: "ok",
     checkedAt: "2026-09-04T00:00:00.000Z",
-    sidecarVersion: "0.1.1",
+    sidecarVersion: "0.1.2",
   });
 });
 
@@ -158,7 +158,7 @@ test("doctor succeeds when the service answers but returns the probe unchanged",
     code: "ok",
     outcome: "engine_fallback",
     checkedAt: "2026-09-04T00:00:00.000Z",
-    sidecarVersion: "0.1.1",
+    sidecarVersion: "0.1.2",
   });
   assert.deepEqual(JSON.parse(responses[1].result.content[0].text), { changed: true, mode: "auto", code: "ok" });
   const status = JSON.parse(responses[2].result.content[0].text);
@@ -186,7 +186,7 @@ test("doctor fails when the service does not answer the plugin's request", async
       code: reason,
       outcome: reason,
       checkedAt: "2026-09-04T00:00:00.000Z",
-      sidecarVersion: "0.1.1",
+      sidecarVersion: "0.1.2",
     }, reason);
     assert.deepEqual(JSON.parse(responses[1].result.content[0].text), {
       changed: false,
@@ -335,7 +335,7 @@ test("doctor judges real service answers through the client contract", async () 
         },
       });
       const doctor = JSON.parse(responses[0].result.content[0].text);
-      assert.deepEqual(doctor, { ...expected, checkedAt: "2026-09-04T00:00:00.000Z", sidecarVersion: "0.1.1" }, label);
+      assert.deepEqual(doctor, { ...expected, checkedAt: "2026-09-04T00:00:00.000Z", sidecarVersion: "0.1.2" }, label);
       const mode = JSON.parse(responses[1].result.content[0].text);
       assert.equal(mode.changed, expected.ok, label);
       assert.equal(mode.mode, expected.ok ? "auto" : "shadow", label);
@@ -361,6 +361,6 @@ test("missing credentials fail doctor safely without attempting a diagnostic", a
     ok: false,
     code: "not_configured",
     outcome: null,
-    sidecarVersion: "0.1.1",
+    sidecarVersion: "0.1.2",
   });
 });

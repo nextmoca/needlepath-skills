@@ -4,7 +4,16 @@
       "command": "node",
       "args": [
         "${CLAUDE_PLUGIN_ROOT}/src/mcp-server.mjs"
-      ]
+      ],
+      "env": {
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY": "${user_config.needlepath_api_key}",
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE": "${user_config.needlepath_mode}",
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_BASE_URL": "${user_config.needlepath_base_url}",
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MIN_TOKENS": "${user_config.needlepath_min_tokens}",
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MAX_CONTEXT_TOKENS": "${user_config.needlepath_max_context_tokens}",
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TIMEOUT_MS": "${user_config.needlepath_timeout_ms}",
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TELEMETRY": "${user_config.needlepath_telemetry}"
+      }
     }
   }
 }
