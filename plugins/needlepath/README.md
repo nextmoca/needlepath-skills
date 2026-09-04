@@ -6,7 +6,7 @@ This plugin adds a PostToolUse hook to Claude Code. When a tool result is large,
 
 A new install starts in `shadow` mode: the same request runs and its outcome is recorded as metadata, but Claude keeps every original tool result. Nothing changes what Claude reads until you run the diagnostic and enable `auto`.
 
-The plugin is a transport. It sends text to the API and hands back what the API returns. No selection logic runs on your machine.
+The plugin sends eligible tool output to the Needlepath API and applies what the API returns. It keeps only metadata on your machine.
 
 ## Requirements
 
