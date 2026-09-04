@@ -72,6 +72,7 @@ export function loadConfig(env = process.env, state = {}) {
       250,
       10_000,
     ),
+    autochunk: booleanValue(env.CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK, true),
     telemetry: booleanValue(env.CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TELEMETRY, true),
     operatingPoint: "np-2026-08-r4",
     maxRequestBytes: 5_500_000,

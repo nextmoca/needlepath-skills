@@ -64,6 +64,12 @@
       "min": 250,
       "max": 10000
     },
+    "needlepath_autochunk": {
+      "type": "boolean",
+      "title": "Split large results into selectable parts",
+      "description": "Let Needlepath split a large tool result into parts and select among them. Off, a tool result is one indivisible record, so it is kept whole or not at all.",
+      "default": true
+    },
     "needlepath_telemetry": {
       "type": "boolean",
       "title": "Metadata telemetry",

@@ -48,6 +48,7 @@ test("configuration is bounded and pins the production operating point", async (
       CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MAX_CONTEXT_TOKENS: "999999",
       CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TIMEOUT_MS: "999999",
       CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TELEMETRY: "false",
+      CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "false",
     },
     {},
   );
@@ -61,11 +62,21 @@ test("configuration is bounded and pins the production operating point", async (
     maxContextTokens: 65536,
     timeoutMs: 10000,
     telemetry: false,
+    autochunk: false,
     operatingPoint: "np-2026-08-r4",
     maxRequestBytes: 5_500_000,
   });
 
   assert.equal(Object.hasOwn(await readJson(".claude-plugin/plugin.json"), "metadata"), false);
+});
+
+test("splitting is on unless the option says otherwise", async () => {
+  const { loadConfig } = await importConfig();
+  const key = { CLAUDE_PLUGIN_OPTION_NEEDLEPATH_API_KEY: "np_test_secret" };
+  assert.equal(loadConfig?.(key, {}).autochunk, true);
+  assert.equal(loadConfig?.({ ...key, CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "maybe" }, {}).autochunk, true);
+  assert.equal(loadConfig?.({ ...key, CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "false" }, {}).autochunk, false);
+  assert.equal(loadConfig?.({ ...key, CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK: "0" }, {}).autochunk, false);
 });
 
 test("auto needs a successful doctor, which does not expire", async () => {

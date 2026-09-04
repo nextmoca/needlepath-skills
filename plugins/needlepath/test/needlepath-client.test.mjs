@@ -49,6 +49,7 @@ function config(baseUrl, overrides = {}) {
     maxContextTokens: 8000,
     timeoutMs: 1000,
     telemetry: true,
+    autochunk: true,
     operatingPoint: "np-2026-08-r4",
     maxRequestBytes: 5_500_000,
     ...overrides,
@@ -104,6 +105,7 @@ test("selection sends a stable typed record with r4 adaptive auto budget and app
       max_context_tokens: 3000,
       operating_point: "np-2026-08-r4",
       mode: "adaptive",
+      autochunk: true,
       adaptive: {
         initial_tokens: 1500,
         escalation_tokens: [3000],
@@ -125,6 +127,22 @@ test("selection sends a stable typed record with r4 adaptive auto budget and app
     assert.equal(result?.metadata.tokensBefore, 5000);
     assert.equal(result?.metadata.tokensAfter, 4);
     assert.equal(result?.metadata.recordsSelected, 1);
+  });
+});
+
+test("autochunk can be switched off, and then the request does not mention it", async () => {
+  const { selectContext } = await clientModule();
+  let budget;
+  await withServer(async (request, response) => {
+    const body = await readJson(request);
+    budget = body.budget;
+    response.writeHead(200, { "content-type": "application/json" });
+    response.end(JSON.stringify(applicable(body)));
+  }, async (baseUrl) => {
+    await selectContext?.({ projection: projection(), task: "task" }, config(baseUrl, { autochunk: false }));
+    assert.equal("autochunk" in budget, false);
+    await selectContext?.({ projection: projection(), task: "task" }, config(baseUrl));
+    assert.equal(budget.autochunk, true);
   });
 });
 
@@ -185,6 +203,7 @@ test("contract declines and unknown outcomes never apply selected output", async
     ["empty_selection", { records_selected: 0, selected: [], rendered_context: "" }],
     ["request_mismatch", { request_id: "someone-elses-request" }],
     ["unknown_outcome", { outcome: "future-maybe-applied" }],
+    ["escalated", { outcome: "escalated", selected: [], records_selected: 0, rendered_context: "", tokens_after: 0 }],
     ["unknown_selection", { selected: [{ record_id: "unknown", text: "x" }] }],
     ["no_reduction", { rendered_context: "A".repeat(20_000), tokens_after: 5000, tokens_saved: 0 }],
   ];
@@ -231,7 +250,7 @@ test("transient failures retry once while deterministic 500 and authentication f
     assert.equal(calls, 2);
   });
 
-  for (const [status, reason] of [[500, "http_500"], [401, "authentication_failed"]]) {
+  for (const [status, reason] of [[500, "http_500"], [401, "authentication_failed"], [400, "http_400"], [413, "http_413"]]) {
     calls = 0;
     await withServer(async (_request, response) => {
       calls += 1;

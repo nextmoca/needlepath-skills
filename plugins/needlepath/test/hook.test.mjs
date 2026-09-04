@@ -209,6 +209,36 @@ test("auto returns only a schema-valid replacement for a fully applied selection
   assert.equal(JSON.stringify(output).includes("A".repeat(100)), false);
 });
 
+test("auto keeps the original output when the service escalates", async () => {
+  const root = await mkdtemp(join(tmpdir(), "needlepath-hook-"));
+  const { handlePostToolUse } = await hookModule();
+  const { readState, updateState } = await stateModule();
+  await updateState(root, {
+    doctor: { ok: true, code: "ok", checkedAt: new Date().toISOString(), sidecarVersion: "0.1.3" },
+  });
+
+  // Splitting makes an escalation reachable: the service found no selection that fits,
+  // returns no records, and meters the request. The hook must still emit nothing.
+  const output = await handlePostToolUse?.(
+    postToolEvent(),
+    environment(root, { CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MODE: "auto" }),
+    {
+      selectContext: async () => ({
+        applied: false,
+        reason: "escalated",
+        selectedText: "",
+        metadata: { serviceOk: true, tokensBefore: 15000, tokensAfter: 0, recordsAvailable: 42, recordsSelected: 0, latencyMs: 12 },
+      }),
+    },
+  );
+
+  assert.equal(output, null);
+  const outcome = (await readState(root)).lastOutcome;
+  assert.equal(outcome?.applied, false);
+  assert.equal(outcome?.reason, "escalated");
+  assert.equal(outcome?.recordsSelected, 0);
+});
+
 test("direct auto configuration shadows eligible output until doctor succeeds", async () => {
   const root = await mkdtemp(join(tmpdir(), "needlepath-hook-"));
   const { handlePostToolUse } = await hookModule();

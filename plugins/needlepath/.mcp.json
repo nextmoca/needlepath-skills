@@ -12,6 +12,7 @@
         "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MIN_TOKENS": "${user_config.needlepath_min_tokens}",
         "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_MAX_CONTEXT_TOKENS": "${user_config.needlepath_max_context_tokens}",
         "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TIMEOUT_MS": "${user_config.needlepath_timeout_ms}",
+        "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_AUTOCHUNK": "${user_config.needlepath_autochunk}",
         "CLAUDE_PLUGIN_OPTION_NEEDLEPATH_TELEMETRY": "${user_config.needlepath_telemetry}"
       }
     }

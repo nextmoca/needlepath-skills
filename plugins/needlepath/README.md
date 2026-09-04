@@ -101,7 +101,10 @@ After installing, set these values with `/plugin configure needlepath@needlepath
 | Minimum candidate tokens | 4000 | Smaller tool results are not sent. |
 | Maximum selected tokens | 8000 | Ceiling on the selected subset. The budget requested is the smaller of this and 60 percent of the result's size. |
 | Selection timeout | 3000 ms | Total deadline for the call, including the one retry. |
+| Split large results into selectable parts | on | Let Needlepath split a large result into parts and select among them. Off, a result is one indivisible record, kept whole or not at all. |
 | Metadata telemetry | on | Write the last outcome's metadata to local state. Off means no outcome is written. |
+
+Splitting is what makes selection possible on a single large tool result. Needlepath meters a selection that reduces a result. A result it returns unchanged because it stood down or fell back to full context is not metered. A result too large for the selection capacity comes back as an escalation, which is metered at the full rate even though Claude keeps the original output.
 
 ### Modes
 
